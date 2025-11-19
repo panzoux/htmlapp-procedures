@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedure Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0b10;
+            --surface-color: #161b22;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent-cyan: #00f0ff;
+            --accent-pink: #ff00aa;
+            --accent-green: #00ff9d;
+            --border-color: #30363d;
+            --glass-bg: rgba(22, 27, 34, 0.8);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Header */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-pink));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        button,
+        .file-label {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        button:hover,
+        .file-label:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+            color: var(--accent-cyan);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Mode Toggle */
+        .mode-switch {
+            display: flex;
+            background: var(--surface-color);
+            border-radius: 20px;
+            padding: 2px;
+            border: 1px solid var(--border-color);
+        }
+
+        .mode-option {
+            padding: 0.4rem 1rem;
+            border-radius: 18px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .mode-option.active {
+            background: var(--accent-pink);
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 0, 170, 0.5);
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            min-width: 800px;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--text-secondary);
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            /* Sticky header within main */
+            background: var(--bg-color);
+            /* Opaque to hide scrolling content */
+            z-index: 10;
+        }
+
+        td {
+            background: var(--surface-color);
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        tr td:first-child {
+            border-left: 1px solid var(--border-color);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        tr td:last-child {
+            border-right: 1px solid var(--border-color);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        /* Row Status Styles */
+        tr.status-pending {
+            opacity: 0.8;
+        }
+
+        tr.status-in-progress td {
+            border-color: var(--accent-cyan);
+            box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.05);
+        }
+
+        tr.status-in-progress td:first-child {
+            border-left: 4px solid var(--accent-cyan);
+        }
+
+        tr.status-done td {
+            border-color: var(--accent-green);
+            opacity: 0.5;
+            background: #0d1117;
+        }
+
+        tr.status-done td:first-child {
+            border-left: 4px solid var(--accent-green);
+        }
+
+        /* Editable Fields */
+        .editable {
+            outline: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+            min-height: 1.2em;
+            white-space: pre-wrap;
+            /* Preserve newlines */
+        }
+
+        .editable:focus {
+            border-bottom: 1px solid var(--accent-pink);
+        }
+
+        /* Mode Logic - Editability */
+        /* Default (Prepare Mode): Procedure editable, Remarks NOT editable */
+        body.mode-prepare .col-procedure .editable {
+            pointer-events: auto;
+        }
+
+        body.mode-prepare .col-remarks .editable {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* Execute Mode: Procedure NOT editable, Remarks editable */
+        body.mode-execute .col-procedure .editable {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        body.mode-execute .col-remarks .editable {
+            pointer-events: auto;
+        }
+
+        body.mode-prepare .status-btn {
+            pointer-events: none;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Status Button */
+        .status-btn {
+            background: transparent;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        tr.status-in-progress .status-btn {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background: rgba(0, 240, 255, 0.1);
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        tr.status-done .status-btn {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            background: rgba(0, 255, 157, 0.1);
+        }
+
+        .status-btn.btn-disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(0, 240, 255, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 240, 255, 0);
+            }
+        }
+
+        .add-row-btn {
+            margin-top: 1rem;
+            width: 100%;
+            border-style: dashed;
+            opacity: 0.6;
+        }
+
+        .add-row-btn:hover {
+            opacity: 1;
+            border-style: solid;
+        }
+
+        body.mode-execute .add-row-btn {
+            display: none;
+        }
+
+        .delete-btn {
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        tr:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            color: var(--accent-pink);
+        }
+
+        body.mode-execute .delete-btn {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="mode-prepare">
+
+    <header>
+        <h1>Procedure Manager</h1>
+        <div class="controls">
+            <div class="mode-switch">
+                <div class="mode-option active" onclick="setMode('prepare')">PREPARE</div>
+                <div class="mode-option" onclick="setMode('execute')">EXECUTE</div>
+            </div>
+            <label class="file-label">
+                IMPORT CSV
+                <input type="file" id="csvInput" accept=".csv" onchange="importCSV(this)">
+            </label>
+            <button onclick="exportCSV()">EXPORT CSV</button>
+        </div>
+    </header>
+
+    <main>
+        <table id="taskTable">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th>Procedure</th>
+                    <th style="width: 120px;">Status</th>
+                    <th style="width: 180px;">Start Time</th>
+                    <th style="width: 180px;">End Time</th>
+                    <th>Remarks</th>
+                    <th style="width: 40px;"></th>
+                </tr>
+            </thead>
+            <tbody id="taskBody">
+                <!-- Rows will be generated here -->
+            </tbody>
+        </table>
+        <button class="add-row-btn" onclick="addNewRow()">+ ADD STEP</button>
+    </main>
+
+    <script>
+        // State
+        let tasks = [
+            { id: 1, procedure: "Example Step 1", status: "Pending", startTime: "", endTime: "", remarks: "" },
+            { id: 2, procedure: "Example Step 2", status: "Pending", startTime: "", endTime: "", remarks: "" }
+        ];
+
+        const STATUS_PENDING = "Pending";
+        const STATUS_IN_PROGRESS = "In Progress";
+        const STATUS_DONE = "Done";
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            render();
+        });
+
+        // Mode Switching
+        function setMode(mode) {
+            document.body.className = `mode-${mode}`;
+            document.querySelectorAll('.mode-option').forEach(el => {
+                el.classList.toggle('active', el.innerText.toLowerCase() === mode);
+            });
+            render(); // Re-render to update disabled states
+        }
+
+        // Rendering
+        function render() {
+            const tbody = document.getElementById('taskBody');
+            tbody.innerHTML = '';
+
+            // Auto-renumber IDs
+            tasks.forEach((task, index) => task.id = index + 1);
+
+            tasks.forEach((task, index) => {
+                const tr = document.createElement('tr');
+
+                // Determine row class based on status
+                let statusClass = 'status-pending';
+                if (task.status === STATUS_IN_PROGRESS) statusClass = 'status-in-progress';
+                if (task.status === STATUS_DONE) statusClass = 'status-done';
+                tr.className = statusClass;
+
+                // Check if status button should be disabled (Sequential Logic)
+                // Enabled if: It's the first task OR Previous task is NOT Pending
+                const isExecuteMode = document.body.classList.contains('mode-execute');
+
+                let isEnabled = true;
+                if (isExecuteMode) {
+                    const isFirst = index === 0;
+                    const prevTask = tasks[index - 1];
+                    // If previous task is Pending, current task cannot be started (unless it's the first one)
+                    isEnabled = isFirst || (prevTask && prevTask.status !== STATUS_PENDING);
+                }
+
+                const disabledAttr = isEnabled ? '' : 'disabled';
+                const disabledClass = isEnabled ? '' : 'btn-disabled';
+
+                tr.innerHTML = `
+                    <td>${task.id}</td>
+                    <td class="col-procedure"><div class="editable" contenteditable="true" onblur="updateTask(${index}, 'procedure', this.innerText)">${escapeHtml(task.procedure)}</div></td>
+                    <td>
+                        <button class="status-btn ${disabledClass}" onclick="toggleStatus(${index})" ${disabledAttr}>${task.status}</button>
+                    </td>
+                    <td><span class="timestamp">${task.startTime}</span></td>
+                    <td><span class="timestamp">${task.endTime}</span></td>
+                    <td class="col-remarks"><div class="editable" contenteditable="true" onblur="updateTask(${index}, 'remarks', this.innerText)">${escapeHtml(task.remarks)}</div></td>
+                    <td><span class="delete-btn" onclick="deleteRow(${index})">×</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Data Updates
+        function updateTask(index, field, value) {
+            tasks[index][field] = value;
+        }
+
+        function addNewRow() {
+            tasks.push({ id: tasks.length + 1, procedure: "", status: STATUS_PENDING, startTime: "", endTime: "", remarks: "" });
+            render();
+        }
+
+        function deleteRow(index) {
+            if (confirm('Delete this step?')) {
+                tasks.splice(index, 1);
+                render();
+            }
+        }
+
+        // Status Logic
+        function toggleStatus(index) {
+            // Sequential Check (Double check logic)
+            const isExecuteMode = document.body.classList.contains('mode-execute');
+            if (isExecuteMode && index > 0) {
+                const prevTask = tasks[index - 1];
+                if (prevTask.status === STATUS_PENDING) {
+                    alert("Previous step must be started or completed first.");
+                    return;
+                }
+            }
+
+            const task = tasks[index];
+            const now = new Date().toLocaleString('ja-JP');
+
+            if (task.status === STATUS_PENDING) {
+                task.status = STATUS_IN_PROGRESS;
+                task.startTime = now;
+            } else if (task.status === STATUS_IN_PROGRESS) {
+                task.status = STATUS_DONE;
+                task.endTime = now;
+            } else if (task.status === STATUS_DONE) {
+                // Revert to Pending
+                task.status = STATUS_PENDING;
+                task.startTime = ""; // Clear Start Time
+                task.endTime = "";   // Clear End Time
+            }
+            render();
+        }
+
+        // CSV Import
+        function importCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                parseCSV(text);
+                input.value = ''; // Reset input
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function parseCSV(text) {
+            // Robust CSV Parser handling quoted newlines
+            const rows = [];
+            let currentRow = [];
+            let currentVal = '';
+            let insideQuote = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (char === '"') {
+                    if (insideQuote && nextChar === '"') {
+                        // Escaped quote
+                        currentVal += '"';
+                        i++;
+                    } else {
+                        // Toggle quote
+                        insideQuote = !insideQuote;
+                    }
+                } else if (char === ',' && !insideQuote) {
+                    // End of cell
+                    currentRow.push(currentVal);
+                    currentVal = '';
+                } else if ((char === '\r' || char === '\n') && !insideQuote) {
+                    // End of row
+                    if (char === '\r' && nextChar === '\n') i++; // Skip \n in \r\n
+
+                    currentRow.push(currentVal);
+                    rows.push(currentRow);
+                    currentRow = [];
+                    currentVal = '';
+                } else {
+                    currentVal += char;
+                }
+            }
+            // Push last row if exists
+            if (currentVal || currentRow.length > 0) {
+                currentRow.push(currentVal);
+                rows.push(currentRow);
+            }
+
+            const newTasks = [];
+            // Heuristic: Skip header if first row looks like header
+            let startIndex = 0;
+            if (rows.length > 0 && (rows[0][0] === 'ID' || rows[0][1] === 'Procedure')) {
+                startIndex = 1;
+            }
+
+            for (let i = startIndex; i < rows.length; i++) {
+                const cols = rows[i];
+                if (cols.length < 2) continue; // Skip empty/invalid rows
+
+                newTasks.push({
+                    id: 0, // Will be renumbered
+                    procedure: cols[1] || "",
+                    status: cols[2] || STATUS_PENDING,
+                    startTime: cols[3] || "",
+                    endTime: cols[4] || "",
+                    remarks: cols[5] || ""
+                });
+            }
+
+            if (newTasks.length > 0) {
+                tasks = newTasks;
+                render();
+            } else {
+                alert("No valid tasks found in CSV.");
+            }
+        }
+
+        // CSV Export
+        function exportCSV() {
+            // BOM for Excel UTF-8 compatibility
+            const BOM = "\uFEFF";
+            let csvContent = BOM + "ID,Procedure,Status,Start Time,End Time,Remarks\n";
+
+            tasks.forEach(task => {
+                const row = [
+                    task.id,
+                    `"${(task.procedure || '').replace(/"/g, '""')}"`,
+                    task.status,
+                    task.startTime,
+                    task.endTime,
+                    `"${(task.remarks || '').replace(/"/g, '""')}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "procedure_export.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+
+</body>
+
+</html>
